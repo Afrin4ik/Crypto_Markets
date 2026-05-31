@@ -1,0 +1,298 @@
+:root {
+  --bg: #f5f7f8;
+  --surface: #ffffff;
+  --surface-strong: #f0f3f5;
+  --text: #141719;
+  --muted: #626b73;
+  --line: #dce2e6;
+  --green: #148a5b;
+  --red: #c74343;
+  --amber: #b7791f;
+  --teal: #087d8f;
+  --shadow: 0 18px 45px rgba(20, 23, 25, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button {
+  font: inherit;
+}
+
+.dashboard {
+  width: min(1480px, calc(100vw - 32px));
+  margin: 0 auto;
+  padding: 24px 0;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--teal);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+h1,
+h2 {
+  margin: 0;
+  letter-spacing: 0;
+}
+
+h1 {
+  font-size: clamp(1.55rem, 2.4vw, 2.35rem);
+  line-height: 1.05;
+}
+
+h2 {
+  font-size: 1rem;
+}
+
+.status,
+.live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--amber);
+}
+
+.status.is-online .status-dot {
+  background: var(--green);
+}
+
+.status.is-offline .status-dot {
+  background: var(--red);
+}
+
+.market-strip {
+  display: grid;
+  grid-template-columns:
+    minmax(200px, 1.3fr)
+    minmax(185px, 1.2fr)
+    minmax(150px, 1fr)
+    minmax(150px, 1fr)
+    minmax(190px, 1.22fr)
+    minmax(150px, 1fr);
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.metric,
+.chart-panel,
+.forecast-panel {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.metric {
+  min-height: 86px;
+  padding: 14px 16px;
+}
+
+.metric-label {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.metric strong {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 1.25rem;
+}
+
+.price-metric strong {
+  font-size: clamp(1.55rem, 2.5vw, 2.2rem);
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.chart-panel,
+.forecast-panel {
+  min-width: 0;
+}
+
+.chart-panel {
+  padding: 16px;
+}
+
+.forecast-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+.panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 40px;
+  margin-bottom: 12px;
+}
+
+.panel-heading span {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.live-pill {
+  min-height: 28px;
+  background: var(--surface-strong);
+  color: var(--teal);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+#candlestickChart {
+  display: block;
+  width: 100%;
+  height: min(62vh, 650px);
+  min-height: 420px;
+}
+
+.forecast-result {
+  display: grid;
+  gap: 8px;
+  min-height: 170px;
+  align-content: center;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-strong);
+}
+
+.forecast-result strong {
+  overflow-wrap: anywhere;
+  font-size: clamp(1.3rem, 2vw, 1.85rem);
+  line-height: 1.15;
+}
+
+.forecast-result span {
+  color: var(--muted);
+}
+
+.forecast-result.is-up strong {
+  color: var(--green);
+}
+
+.forecast-result.is-down strong {
+  color: var(--red);
+}
+
+#predictButton {
+  width: 100%;
+  min-height: 46px;
+  margin-top: auto;
+  border: 0;
+  border-radius: 8px;
+  background: var(--text);
+  color: #ffffff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+#predictButton:hover {
+  background: #2b3034;
+}
+
+#predictButton:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.positive {
+  color: var(--green);
+}
+
+.negative {
+  color: var(--red);
+}
+
+@media (max-width: 980px) {
+  .workspace,
+  .market-strip {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .market-strip .metric:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .chart-panel {
+    grid-column: 1 / -1;
+  }
+
+  .forecast-panel {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard {
+    width: min(100vw - 20px, 1480px);
+    padding: 14px 0;
+  }
+
+  .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .market-strip,
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  #candlestickChart {
+    height: 420px;
+    min-height: 360px;
+  }
+}

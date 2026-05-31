@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bitcoin Permutation Decision Trees Forecast</title>
+    <link rel="stylesheet" href="/static/css/styles.css" />
+  </head>
+  <body>
+    <main class="dashboard">
+      <section class="topbar">
+        <div>
+          <p class="eyebrow">Bybit Spot</p>
+          <h1>Bitcoin Permutation Decision Trees Forecast</h1>
+        </div>
+        <div class="status" id="streamStatus">
+          <span class="status-dot"></span>
+          <span id="streamStatusText">Подключение...</span>
+        </div>
+      </section>
+
+      <section class="market-strip" aria-label="Текущие рыночные показатели">
+        <div class="metric price-metric">
+          <span class="metric-label">Текущая цена</span>
+          <strong id="lastPrice">—</strong>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Изменение за 24ч</span>
+          <strong id="dailyChange">—</strong>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Максимум за 24ч</span>
+          <strong id="dailyHigh">—</strong>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Минимум за 24ч</span>
+          <strong id="dailyLow">—</strong>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Оборот USDT за 24ч</span>
+          <strong id="dailyTurnover">—</strong>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Объём BTC за 24ч</span>
+          <strong id="dailyVolume">—</strong>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <div class="chart-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>BTC/USDT</h2>
+              <span id="chartMeta">1m · ожидание данных</span>
+            </div>
+          </div>
+          <canvas id="candlestickChart"></canvas>
+        </div>
+
+        <aside class="forecast-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Прогноз PDT</h2>
+              <span id="forecastMeta">Модель будет подключена позже</span>
+            </div>
+          </div>
+          <div class="forecast-result" id="forecastResult">
+            <strong>—</strong>
+            <span>Ожидание запроса</span>
+          </div>
+          <button id="predictButton" type="button">Получить прогноз</button>
+        </aside>
+      </section>
+    </main>
+
+    <script src="/static/js/app.js" defer></script>
+  </body>
+</html>

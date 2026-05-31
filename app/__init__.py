@@ -1,0 +1,1 @@
+"""Bitcoin forecasting dashboard application."""
