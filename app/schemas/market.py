@@ -49,9 +49,11 @@ class MarketEvent(BaseModel):
 
 class PredictionResponse(BaseModel):
     symbol: str
-    direction: Literal["up", "down"]
-    current_price: float
-    target_price: float
+    direction: Literal["UP", "DOWN"] | None = None
+    message: str
+    confidence: float | None = None
+    horizon_minutes: int
+    current_price: float | None = None
     model_name: str
     model_ready: bool
     generated_at_ms: int

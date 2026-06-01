@@ -1,0 +1,163 @@
+{
+  "model_name": "Permutation Decision Tree",
+  "created_at": "2026-06-01T11:18:23.580507+00:00",
+  "csv_path": "data/Binance_BTCUSDT_2026_minute.csv",
+  "model_path": "models/pdt_btc_direction.joblib",
+  "horizon_minutes": 10,
+  "train_tail_limit": 120000,
+  "feature_columns": [
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume",
+    "return_1",
+    "return_3",
+    "return_5",
+    "return_10",
+    "candle_body",
+    "candle_range",
+    "upper_shadow",
+    "lower_shadow",
+    "sma_10",
+    "sma_20",
+    "sma_50",
+    "ema_10",
+    "ema_20",
+    "ema_50",
+    "sma_10_20_diff",
+    "sma_20_50_diff",
+    "ema_10_20_diff",
+    "ema_20_50_diff",
+    "close_sma_10_ratio",
+    "close_sma_20_ratio",
+    "close_sma_50_ratio",
+    "rsi_14",
+    "volatility_10",
+    "volatility_30",
+    "volume_change",
+    "volume_mean_ratio_10",
+    "volume_mean_ratio_30"
+  ],
+  "selected_params": {
+    "max_depth": 3,
+    "min_samples_leaf": 250,
+    "max_thresholds": 32,
+    "etc_sample_limit": 256
+  },
+  "raw_rows": 120000,
+  "split_rows": {
+    "train": 83941,
+    "validation": 17941,
+    "test": 17941
+  },
+  "class_balance": {
+    "train_final": {
+      "DOWN": 50735,
+      "UP": 51147,
+      "DOWN_share": 0.4979780530417542,
+      "UP_share": 0.5020219469582459
+    },
+    "validation": {
+      "DOWN": 8835,
+      "UP": 9106,
+      "DOWN_share": 0.4924474666963937,
+      "UP_share": 0.5075525333036063
+    },
+    "test": {
+      "DOWN": 9015,
+      "UP": 8926,
+      "DOWN_share": 0.50248035226576,
+      "UP_share": 0.49751964773424
+    }
+  },
+  "metrics": {
+    "train": {
+      "accuracy": 0.5035923911976601,
+      "balanced_accuracy": 0.5020606733586325,
+      "precision": 0.50319438859849,
+      "recall": 0.8808336754843882,
+      "f1": 0.6404936060108474,
+      "confusion_matrix": [
+        [
+          6255,
+          44480
+        ],
+        [
+          6095,
+          45052
+        ]
+      ]
+    },
+    "validation": {
+      "accuracy": 0.4995819631012764,
+      "balanced_accuracy": 0.5062721072606344,
+      "precision": 0.5623781676413255,
+      "recall": 0.06336481440808259,
+      "f1": 0.11389656533754441,
+      "confusion_matrix": [
+        [
+          8386,
+          449
+        ],
+        [
+          8529,
+          577
+        ]
+      ]
+    },
+    "test": {
+      "accuracy": 0.5006967281645394,
+      "balanced_accuracy": 0.5028588981269423,
+      "precision": 0.49904705181655745,
+      "recall": 0.9387183508850548,
+      "f1": 0.6516565562295847,
+      "confusion_matrix": [
+        [
+          604,
+          8411
+        ],
+        [
+          547,
+          8379
+        ]
+      ]
+    },
+    "baseline": {
+      "majority_class": {
+        "accuracy": 0.49751964773424,
+        "balanced_accuracy": 0.5,
+        "precision": 0.49751964773424,
+        "recall": 1.0,
+        "f1": 0.6644582573417204,
+        "confusion_matrix": [
+          [
+            0,
+            9015
+          ],
+          [
+            0,
+            8926
+          ]
+        ]
+      },
+      "previous_direction": {
+        "accuracy": 0.4951786411013879,
+        "balanced_accuracy": 0.49509792042515344,
+        "precision": 0.49245304758612746,
+        "recall": 0.4788259018597356,
+        "f1": 0.4855438795796649,
+        "confusion_matrix": [
+          [
+            4610,
+            4405
+          ],
+          [
+            4652,
+            4274
+          ]
+        ]
+      }
+    }
+  }
+}

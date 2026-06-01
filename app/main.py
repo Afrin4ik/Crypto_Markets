@@ -15,7 +15,7 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     market_hub = MarketDataHub(settings=settings)
     market_stream = BybitMarketStream(settings=settings, market_hub=market_hub)
-    predictor = PermutationDecisionTreePredictor()
+    predictor = PermutationDecisionTreePredictor(settings=settings)
 
     app.state.settings = settings
     app.state.market_hub = market_hub

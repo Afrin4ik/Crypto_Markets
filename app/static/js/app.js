@@ -60,6 +60,13 @@ function formatAmount(value, unit, maximumFractionDigits = 2) {
   return formatted === "—" ? "—" : `${formatted} ${unit}`;
 }
 
+function formatConfidence(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) {
+    return "—";
+  }
+  return `${Math.round(Number(value) * 100)}%`;
+}
+
 function formatPriceDelta(value) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) {
     return "—";
@@ -334,16 +341,22 @@ async function requestPrediction() {
       throw new Error(prediction.detail || "Прогноз временно недоступен");
     }
 
-    const isUp = prediction.direction === "up";
+    if (!prediction.model_ready || !prediction.direction) {
+      elements.forecastResult.querySelector("strong").textContent = "Прогноз недоступен";
+      elements.forecastResult.querySelector("span").textContent = prediction.message;
+      elements.forecastMeta.textContent = `Цена на момент прогноза: ${formatPrice(prediction.current_price)}`;
+      return;
+    }
+
+    const isUp = prediction.direction === "UP";
     elements.forecastResult.classList.toggle("is-up", isUp);
     elements.forecastResult.classList.toggle("is-down", !isUp);
-    elements.forecastResult.querySelector("strong").textContent = isUp
-      ? `Прогнозируется рост цены Bitcoin до ${formatPrice(prediction.target_price)}`
-      : `Прогнозируется падение цены Bitcoin до ${formatPrice(prediction.target_price)}`;
-    elements.forecastResult.querySelector("span").textContent = prediction.model_ready
-      ? prediction.model_name
-      : "Демонстрационная заглушка до подключения PDT-модели";
-    elements.forecastMeta.textContent = `Текущая цена: ${formatPrice(prediction.current_price)}`;
+    elements.forecastResult.querySelector("strong").textContent = prediction.message;
+    elements.forecastResult.querySelector("span").textContent =
+      `Уверенность: ${formatConfidence(prediction.confidence)} · ` +
+      `Горизонт прогноза: ${prediction.horizon_minutes} минут`;
+    elements.forecastMeta.textContent =
+      `Цена на момент прогноза: ${formatPrice(prediction.current_price)}`;
   } catch (error) {
     elements.forecastResult.querySelector("strong").textContent = "Прогноз недоступен";
     elements.forecastResult.querySelector("span").textContent = error.message;
