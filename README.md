@@ -1,108 +1,54 @@
 # Crypto Markets
 
- Репозиторий для курсового проекта на тему «Разработка и исследование алгоритмов для прогнозирования финансовых рынков на основе адаптации современных научных методов».
+Веб-сервис для мониторинга цены Bitcoin в реальном времени и получения прогноза направления движения цены на ближайший промежуток времени.
 
-В качестве продукта разработан веб-дашборд, на котором в реальном времени отображается цена Bitcoin и прогноз её направления на основе модели Permutation Decision Tree. Дашборд получает данные с биржи Bybit, отображает их в виде свечного графика и предоставляет бинарный прогноз движения цены (вверх/вниз) с указанием confidence и горизонта прогноза.
+Проект разработан как продуктовая часть курсовой работы на тему «Разработка и исследование алгоритмов для прогнозирования финансовых рынков на основе адаптации современных научных методов».
 
-## Что реализовано
+## Кратко о проекте
 
-- FastAPI backend с HTTP API и WebSocket `/ws/market`.
-- Получение рыночных данных BTCUSDT с Bybit через официальный `pybit`.
-- Первичная загрузка исторических 1m-свечей через HTTP API Bybit.
-- Real-time поток свечей и ticker-цены через Bybit WebSocket.
-- Frontend на HTML/CSS/JavaScript с canvas-свечным графиком.
-- ML-код для бинарного прогноза направления Bitcoin через Permutation Decision Tree.
-- Endpoint `/api/predict`, который загружает обученную PDT-модель и возвращает только направление `UP`/`DOWN`, confidence и горизонт прогноза.
+Сервис представляет собой веб-дашборд для пары `BTCUSDT`. Он получает рыночные данные с биржи Bybit, отображает текущую цену и свечной график, а также позволяет запросить прогноз направления цены Bitcoin с помощью предварительно обученной модели Permutation Decision Tree.
 
-## Запуск
+Прогноз является бинарным:
 
-```bash
-python3 -m venv .venv
-./.venv/bin/python -m pip install -r requirements.txt
-./.venv/bin/python -m ml.train_pdt
-./.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8003
-```
+- `UP` - ожидается рост цены;
+- `DOWN` - ожидается снижение или отсутствие роста цены.
 
-После запуска перейдите по адресу:
+Модель возвращает направление, уверенность и горизонт прогноза. По умолчанию используется сохранённый артефакт обученной модели из директории `models/`.
 
-```text
-http://127.0.0.1:8003
-```
+## Возможности веб-сервиса
 
-Альтернативный запуск:
+Для пользователя:
 
-```bash
-./.venv/bin/python main.py
-```
+- отображение текущей цены Bitcoin в реальном времени;
+- отображение 24-часовых рыночных показателей: изменение, максимум, минимум, объём и оборот;
+- свечной график BTC/USDT на frontend canvas;
+- кнопка «Получить прогноз» для запроса направления движения цены;
+- отображение результата прогноза, уверенности и горизонта прогноза;
+- статус подключения к потоку рыночных данных.
 
-## Конфигурация
+Для разработчика:
 
-Параметры можно переопределить через переменные окружения:
+- FastAPI backend с HTTP API и WebSocket;
+- получение исторических и real-time данных Bybit через `pybit`;
+- общий feature engineering для обучения и inference;
+- собственная реализация Permutation Decision Tree;
+- CLI-скрипт для повторного обучения модели;
+- набор unit-тестов для API, потоков данных, feature engineering, PDT и prediction service.
 
-- `BYBIT_SYMBOL`, по умолчанию `BTCUSDT`
-- `BYBIT_CATEGORY`, по умолчанию `spot`
-- `BYBIT_CHANNEL_TYPE`, по умолчанию `spot`
-- `BYBIT_TESTNET`, по умолчанию `false`
-- `BYBIT_KLINE_INTERVAL`, по умолчанию `1`
-- `BYBIT_HISTORY_LIMIT`, по умолчанию `180`
-- `PDT_MODEL_PATH`, по умолчанию `models/pdt_btc_direction.joblib`
-- `PDT_METADATA_PATH`, по умолчанию `models/pdt_btc_direction_metadata.json`
-- `PDT_HORIZON_MINUTES`, по умолчанию `10`; используется как fallback до загрузки обученного artifact
-- `PDT_MAX_ROLLING_WINDOW`, по умолчанию `60`
-- `PDT_MIN_CANDLES`, по умолчанию `80`
+## Стек и технологии
 
-## Обучение PDT
-
-Модель предсказывает направление движения Bitcoin:
-
-- `UP`: `close[t + horizon] > close[t]`
-- `DOWN`: `close[t + horizon] <= close[t]`
-
-Горизонт `horizon` выбирается во время обучения из фиксированного набора `10/15/20/30/45/60` минут. Выбранное значение сохраняется в model artifact и автоматически используется backend-ом.
-
-Исторический CSV лежит в проекте:
-
-```text
-data/Binance_BTCUSDT_2026_minute.csv
-```
-
-Основная команда обучения:
-
-```bash
-python -m ml.train_pdt
-```
-
-Это единственный путь обучения. Скрипт использует последний хвост из `120_000` минутных свечей, temporal split `70/15/15` и Optuna `TPESampler` для подбора горизонта и PDT-гиперпараметров в пределах лимита примерно до 1 часа. Split внутри PDT считается hybrid score: ETC Gain + Gini impurity gain. Это остаётся PDT-моделью, но разделения лучше оптимизированы под бинарную классификацию направления. Артефакты сохраняются сюда:
-
-```text
-models/pdt_btc_direction.joblib
-models/pdt_btc_direction_metadata.json
-```
-
-После переобучения перезапустите FastAPI-сервер, потому что predictor лениво загружает model artifact и держит его в памяти.
-
-Смотрите не только `confidence`, но и `baseline`-метрики в JSON. Для Bitcoin на минутных свечах высокий confidence может быть следствием перекоса в majority-class, а не реальной предсказательной силы. Поэтому Optuna objective штрафует модели, которые выглядят уверенными, но не обгоняют majority/previous-direction baseline.
-
-Используемые признаки строятся только из OHLCV и приведены к более стационарному виду: returns `1/3/5/10/15/30`, тело и диапазон свечи, верхняя/нижняя тени, разности и отношения SMA/EMA `10/20/50`, RSI 14, rolling volatility `10/30/60`, volume change, volume rolling mean ratio `10/30/60`, положение close внутри rolling high/low channel. Один и тот же код `ml/features.py` используется при обучении и inference.
-
-Предыдущая старая модель была обучена слишком узким grid и выбирала очень неглубокое дерево:
-
-```text
-selected_params: max_depth=3, min_samples_leaf=250, max_thresholds=32, etc_sample_limit=256
-validation balanced accuracy: 0.5063
-test accuracy: 0.5007
-test balanced accuracy: 0.5029
-test precision: 0.4990
-test recall: 0.9387
-test F1: 0.6517
-test confusion matrix [[DOWN->DOWN, DOWN->UP], [UP->DOWN, UP->UP]]:
-[[604, 8411], [547, 8379]]
-majority baseline accuracy: 0.4975
-previous-direction baseline accuracy: 0.4952
-```
-
-После изменений training дополнительно выводит и сохраняет `mean_confidence`, `coverage@0.55`, `accuracy_at_0.55/0.60/0.65`, baseline-метрики и историю лучших Optuna trials.
-
+- Python 3.10+
+- FastAPI
+- Uvicorn
+- Pydantic
+- pybit
+- NumPy
+- Pandas
+- scikit-learn
+- Optuna
+- Joblib
+- Pytest
+- HTML, CSS, JavaScript
 
 ## Архитектура
 
@@ -111,19 +57,135 @@ app/
   api/              HTTP и WebSocket роуты
   core/             настройки приложения
   schemas/          Pydantic-схемы данных
-  services/         Bybit stream, market hub, PDT prediction service
-  static/           CSS и JavaScript
-  templates/        HTML страницы
+  services/         работа с Bybit, market state, prediction service
+  static/           frontend CSS и JavaScript
+  templates/        HTML-шаблон дашборда
+
 ml/
-  features.py       Общий feature engineering для train/inference
-  pdt/              ETC и Permutation Decision Tree
-  train_pdt.py      CLI обучения и сохранения модели
+  features.py       подготовка OHLCV-признаков для train/inference
+  pdt/              реализация ETC и Permutation Decision Tree
+  train_pdt.py      обучение и сохранение PDT-модели
+
+data/               исторические данные для обучения
+models/             сохранённая модель и metadata
+tests/              тесты проекта
 main.py             локальная точка запуска
-requirements.txt    Python-зависимости
+requirements.txt    зависимости проекта
 ```
 
-## Проверки
+Основной поток работы приложения:
+
+1. При старте backend загружает последние свечи BTC/USDT через HTTP API Bybit.
+2. Затем подключается к Bybit WebSocket и обновляет свечи и ticker в реальном времени.
+3. Frontend получает начальный снимок рынка через HTTP и дальнейшие обновления через WebSocket `/ws/market`.
+4. При нажатии на кнопку «Получить прогноз» frontend отправляет запрос на `/api/predict`.
+5. Backend строит признаки из последних свечей, загружает PDT-модель и возвращает прогноз.
+
+## HTTP API
+
+- `GET /` - главная страница дашборда.
+- `GET /api/health` - состояние сервиса и подключения к рыночному потоку.
+- `GET /api/market/snapshot` - текущий снимок рынка: свечи, ticker, статус.
+- `POST /api/predict` - прогноз направления цены Bitcoin.
+- `WS /ws/market` - поток обновлений для frontend.
+
+## Быстрый запуск
+
+Создайте виртуальное окружение и установите зависимости:
 
 ```bash
-python -m pytest
+python3 -m venv .venv
+./.venv/bin/python -m pip install -r requirements.txt
 ```
+
+Запустите веб-сервис:
+
+```bash
+./.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+Откройте в браузере:
+
+```text
+http://127.0.0.1:8000
+```
+
+Альтернативный запуск:
+
+```bash
+./.venv/bin/python main.py
+```
+
+## Обучение модели
+
+В репозитории уже есть сохранённый артефакт модели:
+
+```text
+models/pdt_btc_direction.joblib
+models/pdt_btc_direction_metadata.json
+```
+
+Если нужно повторно обучить модель, используйте команду:
+
+```bash
+./.venv/bin/python -m ml.train_pdt
+```
+
+Для обучения используется CSV-файл:
+
+```text
+data/Binance_BTCUSDT_2026_minute.csv
+```
+
+Скрипт обучения:
+
+- строит OHLCV-признаки из `ml/features.py`;
+- формирует бинарную целевую переменную `UP`/`DOWN`;
+- использует temporal split `70/15/15`;
+- подбирает горизонт прогноза и гиперпараметры через Optuna;
+- сохраняет модель и метаданные в директорию `models/`.
+
+После повторного обучения перезапустите FastAPI-сервер, потому что prediction service лениво загружает артефакт модели и держит его в памяти.
+
+## Тесты
+
+Запуск всех тестов:
+
+```bash
+./.venv/bin/python -m pytest
+```
+
+Тесты покрывают:
+
+- Pydantic-схемы;
+- конфигурацию приложения;
+- market data hub;
+- парсинг сообщений Bybit;
+- HTTP/WebSocket роуты;
+- feature engineering;
+- Permutation Decision Tree;
+- prediction service.
+
+## Конфигурация
+
+Параметры можно переопределить через переменные окружения.
+
+| Переменная | Значение по умолчанию | Назначение |
+| --- | --- | --- |
+| `BYBIT_SYMBOL` | `BTCUSDT` | Торговая пара |
+| `BYBIT_CATEGORY` | `spot` | Категория Bybit HTTP API |
+| `BYBIT_CHANNEL_TYPE` | `spot` | Тип WebSocket-канала Bybit |
+| `BYBIT_TESTNET` | `false` | Использовать Bybit testnet |
+| `BYBIT_KLINE_INTERVAL` | `1` | Интервал свечей (в минутах) |
+| `BYBIT_HISTORY_LIMIT` | `180` | Количество свечей в памяти сервиса |
+| `PDT_MODEL_PATH` | `models/pdt_btc_direction.joblib` | Путь к артефакту модели |
+| `PDT_METADATA_PATH` | `models/pdt_btc_direction_metadata.json` | Путь к метаданным модели |
+| `PDT_HORIZON_MINUTES` | `10` | Fallback-горизонт до загрузки метаданных |
+| `PDT_MAX_ROLLING_WINDOW` | `60` | Максимальное rolling-окно признаков |
+| `PDT_MIN_CANDLES` | `80` | Минимум свечей для построения признаков |
+
+## Важные замечания
+
+- Прогноз не является финансовой рекомендацией и используется только в рамках учебного проекта.
+- Сервис использует публичные рыночные данные Bybit, поэтому API-ключи не требуются.
+- Для стабильной работы прогноза нужно достаточное количество последних свечей. Если данных недостаточно, endpoint `/api/predict` вернёт понятное сообщение о недоступности прогноза.
