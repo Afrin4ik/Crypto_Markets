@@ -62,10 +62,18 @@ class PermutationDecisionTreePredictor:
                 "Недостаточно истории для rolling-признаков PDT",
             )
 
-        features = feature_matrix(feature_frame.tail(1), self._feature_columns)
-        direction = str(self._model.predict(features)[0])
-        probabilities = self._model.predict_proba(features)[0]
-        confidence = float(max(probabilities))
+        try:
+            missing_columns = sorted(set(self._feature_columns) - set(feature_frame.columns))
+            if missing_columns:
+                raise ValueError(f"artifact ожидает отсутствующие признаки: {missing_columns}")
+
+            features = feature_matrix(feature_frame.tail(1), self._feature_columns)
+            direction = self._normalize_direction(self._model.predict(features)[0])
+            probabilities = self._model.predict_proba(features)[0]
+            confidence = float(max(float(item) for item in probabilities))
+        except Exception as exc:
+            return self._not_ready(snapshot, current_price, f"Не удалось получить PDT-прогноз: {exc}")
+
         message = (
             "Прогнозируется рост цены Bitcoin"
             if direction == "UP"
@@ -109,6 +117,10 @@ class PermutationDecisionTreePredictor:
                 self._feature_columns = list(FEATURE_COLUMNS)
             if self._model is None:
                 raise ValueError("artifact не содержит ключ model")
+            if not callable(getattr(self._model, "predict", None)):
+                raise ValueError("model не поддерживает predict")
+            if not callable(getattr(self._model, "predict_proba", None)):
+                raise ValueError("model не поддерживает predict_proba")
             self._metadata = self._load_metadata()
             self._horizon_minutes = int(
                 self._metadata.get("horizon_minutes", self._horizon_minutes)
@@ -122,6 +134,14 @@ class PermutationDecisionTreePredictor:
         if not metadata_path.exists():
             return {}
         return json.loads(metadata_path.read_text(encoding="utf-8"))
+
+    @staticmethod
+    def _normalize_direction(value: Any) -> str:
+        if value in (1, "1", "UP"):
+            return "UP"
+        if value in (0, "0", "DOWN"):
+            return "DOWN"
+        raise ValueError(f"неизвестный класс прогноза: {value!r}")
 
     def _not_ready(
         self,

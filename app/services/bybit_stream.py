@@ -1,4 +1,5 @@
 import asyncio
+import time
 from typing import Any
 
 from pybit.unified_trading import HTTP, WebSocket
@@ -43,7 +44,7 @@ class BybitMarketStream:
                 channel_type=self._settings.bybit_channel_type,
             )
             self._ws.kline_stream(
-                interval=int(self._settings.kline_interval),
+                interval=self._kline_stream_interval(),
                 symbol=self._settings.bybit_symbol,
                 callback=self._handle_kline_message,
             )
@@ -131,15 +132,21 @@ class BybitMarketStream:
         )
 
     def _parse_ticker(self, data: dict[str, Any], timestamp_ms: int | None) -> Ticker:
+        last_price = data.get("lastPrice")
+        if last_price in (None, ""):
+            last_price = self._market_hub.latest_price()
+        if last_price in (None, ""):
+            raise ValueError("ticker-сообщение не содержит lastPrice")
+
         return Ticker(
             symbol=str(data.get("symbol", self._settings.bybit_symbol)),
-            last_price=float(data["lastPrice"]),
+            last_price=float(last_price),
             price_24h_pct=self._optional_float(data.get("price24hPcnt")),
             high_price_24h=self._optional_float(data.get("highPrice24h")),
             low_price_24h=self._optional_float(data.get("lowPrice24h")),
             volume_24h=self._optional_float(data.get("volume24h")),
             turnover_24h=self._optional_float(data.get("turnover24h")),
-            timestamp_ms=int(timestamp_ms or 0),
+            timestamp_ms=int(timestamp_ms or time.time() * 1000),
         )
 
     @staticmethod
@@ -147,3 +154,7 @@ class BybitMarketStream:
         if value in (None, ""):
             return None
         return float(value)
+
+    def _kline_stream_interval(self) -> int | str:
+        interval = self._settings.kline_interval
+        return int(interval) if interval.isdigit() else interval

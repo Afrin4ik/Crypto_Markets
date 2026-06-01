@@ -78,7 +78,7 @@ function formatPriceDelta(value) {
 function getDailyPriceChange(ticker) {
   const price = Number(ticker?.last_price);
   const pct = Number(ticker?.price_24h_pct);
-  if (!price || Number.isNaN(pct)) {
+  if (!price || Number.isNaN(pct) || pct <= -1) {
     return null;
   }
   return price - price / (1 + pct);
@@ -307,7 +307,14 @@ function connectMarketSocket() {
   const socket = new WebSocket(`${protocol}://${window.location.host}/ws/market`);
 
   socket.addEventListener("message", (event) => {
-    const data = JSON.parse(event.data);
+    let data;
+    try {
+      data = JSON.parse(event.data);
+    } catch {
+      updateStatus({ connected: false, message: "Получено некорректное WebSocket-сообщение" });
+      return;
+    }
+
     if (data.type === "snapshot") {
       applySnapshot(data.payload);
     }
@@ -336,7 +343,7 @@ async function requestPrediction() {
 
   try {
     const response = await fetch("/api/predict", { method: "POST" });
-    const prediction = await response.json();
+    const prediction = await readJsonResponse(response);
     if (!response.ok) {
       throw new Error(prediction.detail || "Прогноз временно недоступен");
     }
@@ -362,6 +369,18 @@ async function requestPrediction() {
     elements.forecastResult.querySelector("span").textContent = error.message;
   } finally {
     elements.predictButton.disabled = false;
+  }
+}
+
+async function readJsonResponse(response) {
+  const text = await response.text();
+  if (!text) {
+    return {};
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(response.ok ? "Сервер вернул некорректный ответ" : "Ошибка сервера");
   }
 }
 
