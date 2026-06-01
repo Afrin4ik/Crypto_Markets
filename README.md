@@ -53,24 +53,58 @@
 ## Архитектура
 
 ```text
-app/
-  api/              HTTP и WebSocket роуты
-  core/             настройки приложения
-  schemas/          Pydantic-схемы данных
-  services/         работа с Bybit, market state, prediction service
-  static/           frontend CSS и JavaScript
-  templates/        HTML-шаблон дашборда
-
-ml/
-  features.py       подготовка OHLCV-признаков для train/inference
-  pdt/              реализация ETC и Permutation Decision Tree
-  train_pdt.py      обучение и сохранение PDT-модели
-
-data/               исторические данные для обучения
-models/             сохранённая модель и metadata
-tests/              тесты проекта
-main.py             локальная точка запуска
-requirements.txt    зависимости проекта
+.
+├── app/                                      # FastAPI-приложение и frontend
+│   ├── __init__.py
+│   ├── main.py                              # создание приложения, lifespan, static files
+│   ├── api/
+│   │   ├── __init__.py
+│   │   └── routes.py                        # HTTP endpoints и WebSocket /ws/market
+│   ├── core/
+│   │   ├── __init__.py
+│   │   └── config.py                        # настройки и переменные окружения
+│   ├── schemas/
+│   │   ├── __init__.py
+│   │   └── market.py                        # Pydantic-схемы market/prediction данных
+│   ├── services/
+│   │   ├── __init__.py
+│   │   ├── bybit_stream.py                  # исторические и real-time данные Bybit
+│   │   ├── market_data.py                   # in-memory состояние рынка и события
+│   │   └── prediction.py                    # загрузка PDT-модели и прогноз
+│   ├── static/
+│   │   ├── css/
+│   │   │   └── styles.css                   # стили веб-дашборда
+│   │   └── js/
+│   │       └── app.js                       # WebSocket, canvas-график, запрос прогноза
+│   └── templates/
+│       └── index.html                       # HTML-страница дашборда
+├── ml/                                      # ML-код и обучение модели
+│   ├── __init__.py
+│   ├── features.py                          # OHLCV-признаки для train/inference
+│   ├── train_pdt.py                         # обучение и сохранение PDT-модели
+│   └── pdt/
+│       ├── __init__.py
+│       ├── etc.py                           # расчёт ETC-метрики
+│       ├── model.py                         # sklearn-like wrapper PDT-классификатора
+│       └── tree.py                          # построение дерева и split logic
+├── data/
+│   └── Binance_BTCUSDT_2026_minute.csv      # исторические минутные свечи для обучения
+├── models/
+│   ├── pdt_btc_direction.joblib             # сохранённый артефакт модели
+│   └── pdt_btc_direction_metadata.json      # метаданные обучения и качества модели
+├── tests/
+│   ├── test_api_routes.py                   # тесты HTTP/WebSocket роутов
+│   ├── test_bybit_stream.py                 # тесты парсинга сообщений Bybit
+│   ├── test_config.py                       # тесты конфигурации
+│   ├── test_etc.py                          # тесты ETC
+│   ├── test_features.py                     # тесты feature engineering
+│   ├── test_market_data.py                  # тесты market data hub
+│   ├── test_pdt_model.py                    # тесты PDT-модели
+│   ├── test_prediction.py                   # тесты prediction service
+│   └── test_prediction_schema.py            # тесты схемы ответа прогноза
+├── README.md                                # описание проекта
+├── main.py                                  # альтернативная локальная точка запуска
+└── requirements.txt                         # Python-зависимости проекта
 ```
 
 Основной поток работы приложения:
