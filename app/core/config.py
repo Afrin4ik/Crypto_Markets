@@ -28,8 +28,8 @@ class Settings:
         )
     )
     pdt_horizon_minutes: int = int(os.getenv("PDT_HORIZON_MINUTES", "10"))
-    pdt_max_rolling_window: int = int(os.getenv("PDT_MAX_ROLLING_WINDOW", "50"))
-    pdt_min_candles: int = int(os.getenv("PDT_MIN_CANDLES", "60"))
+    pdt_max_rolling_window: int = int(os.getenv("PDT_MAX_ROLLING_WINDOW", "60"))
+    pdt_min_candles: int = int(os.getenv("PDT_MIN_CANDLES", "80"))
 
     @property
     def kline_interval_ms(self) -> int:

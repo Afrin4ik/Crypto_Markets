@@ -20,13 +20,13 @@
 python3 -m venv .venv
 ./.venv/bin/python -m pip install -r requirements.txt
 ./.venv/bin/python -m ml.train_pdt
-./.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+./.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8003
 ```
 
 После запуска перейдите по адресу:
 
 ```text
-http://127.0.0.1:8000
+http://127.0.0.1:8003
 ```
 
 Альтернативный запуск:
@@ -47,16 +47,18 @@ http://127.0.0.1:8000
 - `BYBIT_HISTORY_LIMIT`, по умолчанию `180`
 - `PDT_MODEL_PATH`, по умолчанию `models/pdt_btc_direction.joblib`
 - `PDT_METADATA_PATH`, по умолчанию `models/pdt_btc_direction_metadata.json`
-- `PDT_HORIZON_MINUTES`, по умолчанию `10`
-- `PDT_MAX_ROLLING_WINDOW`, по умолчанию `50`
-- `PDT_MIN_CANDLES`, по умолчанию `60`
+- `PDT_HORIZON_MINUTES`, по умолчанию `10`; используется как fallback до загрузки обученного artifact
+- `PDT_MAX_ROLLING_WINDOW`, по умолчанию `60`
+- `PDT_MIN_CANDLES`, по умолчанию `80`
 
 ## Обучение PDT
 
-Модель предсказывает направление движения Bitcoin через `PDT_HORIZON_MINUTES` минут (по умолчанию `10`):
+Модель предсказывает направление движения Bitcoin:
 
 - `UP`: `close[t + horizon] > close[t]`
 - `DOWN`: `close[t + horizon] <= close[t]`
+
+Горизонт `horizon` выбирается во время обучения из фиксированного набора `10/15/20/30/45/60` минут. Выбранное значение сохраняется в model artifact и автоматически используется backend-ом.
 
 Исторический CSV лежит в проекте:
 
@@ -70,24 +72,20 @@ data/Binance_BTCUSDT_2026_minute.csv
 python -m ml.train_pdt
 ```
 
-По умолчанию используется последний хвост из `120_000` минутных свечей, temporal split `70/15/15`, `horizon=10`, небольшой validation grid и PDT с ETC-based split scoring. Артефакты сохраняются сюда:
+Это единственный путь обучения. Скрипт использует последний хвост из `120_000` минутных свечей, temporal split `70/15/15` и Optuna `TPESampler` для подбора горизонта и PDT-гиперпараметров в пределах лимита примерно до 1 часа. Split внутри PDT считается hybrid score: ETC Gain + Gini impurity gain. Это остаётся PDT-моделью, но разделения лучше оптимизированы под бинарную классификацию направления. Артефакты сохраняются сюда:
 
 ```text
 models/pdt_btc_direction.joblib
 models/pdt_btc_direction_metadata.json
 ```
 
-Быстрая smoke-проверка обучения:
+После переобучения перезапустите FastAPI-сервер, потому что predictor лениво загружает model artifact и держит его в памяти.
 
-```bash
-python -m ml.train_pdt --train-tail-limit 5000 --no-grid \
-  --model-path models/pdt_btc_direction_smoke.joblib \
-  --metadata-path models/pdt_btc_direction_smoke_metadata.json
-```
+Смотрите не только `confidence`, но и `baseline`-метрики в JSON. Для Bitcoin на минутных свечах высокий confidence может быть следствием перекоса в majority-class, а не реальной предсказательной силы. Поэтому Optuna objective штрафует модели, которые выглядят уверенными, но не обгоняют majority/previous-direction baseline.
 
-Используемые признаки строятся только из OHLCV: returns `1/3/5/10`, тело и диапазон свечи, верхняя/нижняя тени, SMA/EMA `10/20/50`, отношения к moving average, RSI 14, rolling volatility `10/30`, volume change и volume rolling mean ratio. Один и тот же код `ml/features.py` используется при обучении и inference.
+Используемые признаки строятся только из OHLCV и приведены к более стационарному виду: returns `1/3/5/10/15/30`, тело и диапазон свечи, верхняя/нижняя тени, разности и отношения SMA/EMA `10/20/50`, RSI 14, rolling volatility `10/30/60`, volume change, volume rolling mean ratio `10/30/60`, положение close внутри rolling high/low channel. Один и тот же код `ml/features.py` используется при обучении и inference.
 
-Фактические метрики последнего полного bounded-обучения на `120_000` строках:
+Предыдущая старая модель была обучена слишком узким grid и выбирала очень неглубокое дерево:
 
 ```text
 selected_params: max_depth=3, min_samples_leaf=250, max_thresholds=32, etc_sample_limit=256
@@ -102,6 +100,8 @@ test confusion matrix [[DOWN->DOWN, DOWN->UP], [UP->DOWN, UP->UP]]:
 majority baseline accuracy: 0.4975
 previous-direction baseline accuracy: 0.4952
 ```
+
+После изменений training дополнительно выводит и сохраняет `mean_confidence`, `coverage@0.55`, `accuracy_at_0.55/0.60/0.65`, baseline-метрики и историю лучших Optuna trials.
 
 
 ## Архитектура

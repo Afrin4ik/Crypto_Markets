@@ -14,6 +14,7 @@ class PermutationDecisionTreeClassifier:
     min_samples_leaf: int = 250
     max_thresholds: int = 32
     etc_sample_limit: int | None = 256
+    gini_weight: float = 0.75
     feature_names: list[str] = field(default_factory=list)
     root_: TreeNode | None = None
     classes_: tuple[int, int] = (0, 1)
@@ -42,6 +43,7 @@ class PermutationDecisionTreeClassifier:
             min_samples_leaf=self.min_samples_leaf,
             max_thresholds=self.max_thresholds,
             etc_sample_limit=self.etc_sample_limit,
+            gini_weight=self.gini_weight,
         )
         return self
 
@@ -58,6 +60,9 @@ class PermutationDecisionTreeClassifier:
             leaf = self._predict_leaf(row)
             probabilities.append([leaf.down_probability, leaf.up_probability])
         return np.asarray(probabilities, dtype=float)
+
+    def predict_confidence(self, X: np.ndarray) -> np.ndarray:
+        return np.max(self.predict_proba(X), axis=1)
 
     def _predict_leaf(self, row: np.ndarray):
         if self.root_ is None:

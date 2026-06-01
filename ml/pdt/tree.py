@@ -34,6 +34,8 @@ class SplitCandidate:
     feature_index: int
     threshold: float
     gain: float
+    etc_gain: float
+    gini_gain: float
 
 
 def build_tree(
@@ -45,6 +47,7 @@ def build_tree(
     min_samples_leaf: int,
     max_thresholds: int,
     etc_sample_limit: int | None,
+    gini_weight: float,
 ) -> TreeNode:
     y = y.astype(int)
     if _should_stop(y, depth, max_depth, min_samples_leaf):
@@ -56,6 +59,7 @@ def build_tree(
         min_samples_leaf=min_samples_leaf,
         max_thresholds=max_thresholds,
         etc_sample_limit=etc_sample_limit,
+        gini_weight=gini_weight,
     )
     if split is None or split.gain <= 0:
         return TreeNode(leaf=_leaf_stats(y))
@@ -72,6 +76,7 @@ def build_tree(
             min_samples_leaf=min_samples_leaf,
             max_thresholds=max_thresholds,
             etc_sample_limit=etc_sample_limit,
+            gini_weight=gini_weight,
         ),
         right=build_tree(
             X[~left_mask],
@@ -81,6 +86,7 @@ def build_tree(
             min_samples_leaf=min_samples_leaf,
             max_thresholds=max_thresholds,
             etc_sample_limit=etc_sample_limit,
+            gini_weight=gini_weight,
         ),
     )
 
@@ -92,8 +98,10 @@ def find_best_split(
     min_samples_leaf: int,
     max_thresholds: int,
     etc_sample_limit: int | None,
+    gini_weight: float,
 ) -> SplitCandidate | None:
     best: SplitCandidate | None = None
+    parent_gini = gini_impurity(y)
 
     for feature_index in range(X.shape[1]):
         values = X[:, feature_index]
@@ -105,15 +113,40 @@ def find_best_split(
             if left_count < min_samples_leaf or right_count < min_samples_leaf:
                 continue
 
-            gain = etc_gain(y, left_mask, sample_limit=etc_sample_limit)
+            split_etc_gain = etc_gain(y, left_mask, sample_limit=etc_sample_limit)
+            split_gini_gain = gini_gain(y, left_mask, parent_gini=parent_gini)
+            normalized_etc_gain = split_etc_gain / max(len(y), 1)
+            gain = normalized_etc_gain + (gini_weight * split_gini_gain)
             if best is None or gain > best.gain:
                 best = SplitCandidate(
                     feature_index=feature_index,
                     threshold=float(threshold),
                     gain=float(gain),
+                    etc_gain=float(split_etc_gain),
+                    gini_gain=float(split_gini_gain),
                 )
 
     return best
+
+
+def gini_impurity(y: np.ndarray) -> float:
+    if len(y) == 0:
+        return 0.0
+    down_probability = float((y == 0).sum() / len(y))
+    up_probability = 1.0 - down_probability
+    return 1.0 - down_probability**2 - up_probability**2
+
+
+def gini_gain(y: np.ndarray, left_mask: np.ndarray, *, parent_gini: float | None = None) -> float:
+    left_labels = y[left_mask]
+    right_labels = y[~left_mask]
+    if len(left_labels) == 0 or len(right_labels) == 0:
+        return -float("inf")
+    parent = gini_impurity(y) if parent_gini is None else parent_gini
+    weighted_children = (len(left_labels) / len(y)) * gini_impurity(left_labels) + (
+        len(right_labels) / len(y)
+    ) * gini_impurity(right_labels)
+    return parent - weighted_children
 
 
 def quantile_thresholds(values: np.ndarray, max_thresholds: int) -> np.ndarray:

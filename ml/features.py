@@ -9,41 +9,38 @@ import pandas as pd
 
 
 FEATURE_COLUMNS: list[str] = [
-    "open",
-    "high",
-    "low",
-    "close",
-    "volume",
     "return_1",
     "return_3",
     "return_5",
     "return_10",
+    "return_15",
+    "return_30",
     "candle_body",
     "candle_range",
     "upper_shadow",
     "lower_shadow",
-    "sma_10",
-    "sma_20",
-    "sma_50",
-    "ema_10",
-    "ema_20",
-    "ema_50",
     "sma_10_20_diff",
     "sma_20_50_diff",
+    "sma_10_50_diff",
     "ema_10_20_diff",
     "ema_20_50_diff",
+    "ema_10_50_diff",
     "close_sma_10_ratio",
     "close_sma_20_ratio",
     "close_sma_50_ratio",
     "rsi_14",
     "volatility_10",
     "volatility_30",
+    "volatility_60",
     "volume_change",
     "volume_mean_ratio_10",
     "volume_mean_ratio_30",
+    "volume_mean_ratio_60",
+    "close_position_20",
+    "close_position_50",
 ]
 
-MAX_ROLLING_WINDOW = 50
+MAX_ROLLING_WINDOW = 60
 
 _COLUMN_CANDIDATES: dict[str, tuple[str, ...]] = {
     "timestamp": (
@@ -131,7 +128,7 @@ def build_feature_frame(df: pd.DataFrame, dropna: bool = True) -> pd.DataFrame:
     volume = data["volume"]
     returns = close.pct_change()
 
-    for window in (1, 3, 5, 10):
+    for window in (1, 3, 5, 10, 15, 30):
         data[f"return_{window}"] = close.pct_change(window)
 
     data["candle_body"] = _safe_divide(close - open_price, open_price)
@@ -145,8 +142,10 @@ def build_feature_frame(df: pd.DataFrame, dropna: bool = True) -> pd.DataFrame:
 
     data["sma_10_20_diff"] = _safe_divide(data["sma_10"] - data["sma_20"], close)
     data["sma_20_50_diff"] = _safe_divide(data["sma_20"] - data["sma_50"], close)
+    data["sma_10_50_diff"] = _safe_divide(data["sma_10"] - data["sma_50"], close)
     data["ema_10_20_diff"] = _safe_divide(data["ema_10"] - data["ema_20"], close)
     data["ema_20_50_diff"] = _safe_divide(data["ema_20"] - data["ema_50"], close)
+    data["ema_10_50_diff"] = _safe_divide(data["ema_10"] - data["ema_50"], close)
     data["close_sma_10_ratio"] = _safe_divide(close, data["sma_10"]) - 1.0
     data["close_sma_20_ratio"] = _safe_divide(close, data["sma_20"]) - 1.0
     data["close_sma_50_ratio"] = _safe_divide(close, data["sma_50"]) - 1.0
@@ -154,6 +153,7 @@ def build_feature_frame(df: pd.DataFrame, dropna: bool = True) -> pd.DataFrame:
     data["rsi_14"] = compute_rsi(close, period=14)
     data["volatility_10"] = returns.rolling(window=10, min_periods=10).std()
     data["volatility_30"] = returns.rolling(window=30, min_periods=30).std()
+    data["volatility_60"] = returns.rolling(window=60, min_periods=60).std()
     data["volume_change"] = volume.pct_change()
     data["volume_mean_ratio_10"] = _safe_divide(
         volume, volume.rolling(window=10, min_periods=10).mean()
@@ -161,6 +161,16 @@ def build_feature_frame(df: pd.DataFrame, dropna: bool = True) -> pd.DataFrame:
     data["volume_mean_ratio_30"] = _safe_divide(
         volume, volume.rolling(window=30, min_periods=30).mean()
     ) - 1.0
+    data["volume_mean_ratio_60"] = _safe_divide(
+        volume, volume.rolling(window=60, min_periods=60).mean()
+    ) - 1.0
+
+    high_20 = high.rolling(window=20, min_periods=20).max()
+    low_20 = low.rolling(window=20, min_periods=20).min()
+    high_50 = high.rolling(window=50, min_periods=50).max()
+    low_50 = low.rolling(window=50, min_periods=50).min()
+    data["close_position_20"] = _safe_divide(close - low_20, high_20 - low_20)
+    data["close_position_50"] = _safe_divide(close - low_50, high_50 - low_50)
 
     data = data.replace([np.inf, -np.inf], np.nan)
     if dropna:
