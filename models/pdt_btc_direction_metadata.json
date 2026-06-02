@@ -1,6 +1,6 @@
 {
   "model_name": "Permutation Decision Tree",
-  "created_at": "2026-06-01T16:01:50.237199+00:00",
+  "created_at": "2026-06-02T08:44:22.604364+00:00",
   "csv_path": "data/Binance_BTCUSDT_2026_minute.csv",
   "model_path": "models/pdt_btc_direction.joblib",
   "metadata_path": "models/pdt_btc_direction_metadata.json",
@@ -513,5 +513,5 @@
       "validation_coverage_confidence_055": 0.35195749440715884
     }
   ],
-  "elapsed_seconds": 2194.92
+  "elapsed_seconds": 2262.41
 }
